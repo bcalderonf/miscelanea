@@ -1710,6 +1710,21 @@ public function hacerDevolucion($table, $data, $data_detalle) {
 
     }
 
+    // Send Mail Cierre
+    public function sendMailCierre() {
+
+        header('Content-Type: application/json');
+
+        $queryCierre = Controller::$connection->query("SELECT * FROM CAJA ORDER BY ID DESC LIMIT 1");
+      
+        if($queryCierre) {
+
+            
+
+        }
+
+    }
+
 }
 
 
