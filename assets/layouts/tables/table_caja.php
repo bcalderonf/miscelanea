@@ -316,8 +316,6 @@ catch(mysqli_sql_exception $e) {
 
     </div>
 
-
-
     </div>
 
 </div>
@@ -332,7 +330,6 @@ function getSaldoCaja() {
     });
 
     
-
     $.ajax({
         url: "../classes/Api.php?action=getSaldoCaja",
         method: "POST",
@@ -355,50 +352,113 @@ setInterval(() => {
 }, 2000);
 
 
-function aperturarCaja() {
+function aperturarCaja(control) {
 
-    $.ajax({
-        url: "../classes/Api.php?action=getStatusCaja",
-        method: "POST",
-        data: { "data": {"ESTADO": "EVALUAR"} },
-        dataType: "JSON",
-        success: function(r) {
+var form = $(control).closest(".panel");
 
-        if(r[0].ESTADO == "CERRADA") {
+$.ajax({
+    url: "../classes/Api.php?action=getStatusCaja",
+    method: "POST",
+    data: { "data": {"ESTADO": "EVALUAR"} },
+    dataType: "JSON",
+    success: function(r) {
 
-            $.ajax({
-                url: "../classes/Api.php?action=setStatusCaja",
-                method: "POST",
-                data: { "data": {"ESTADO": "ABIERTA"} },
-                dataType: "JSON",
-                success: function(r) {
+    if(r[0].ESTADO == "CERRADA") {
 
-                    
+        swal({
+            title: 'Aperturar Caja',
+            text: '¿Quieres aperturar la caja?',
+            type: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Aperturar',
+            cancelButtonText: 'Cancelar',
+            showLoaderOnConfirm: true,
+            allowOutsideClick: true
+        })
+        .then((result) => {
 
-                }
-            });
-
-        }
-        else {
+        if(result.value) {
 
             swal({
-                title: 'Aviso',
-                text: 'La caja ya está abierta',
-                type: 'warning',
+                title: '¿Monto extra para agregar a la caja?',
+                input: 'text',
+                type: 'info',
                 showCancelButton: false,
-                confirmButtonText: 'Aceptar',
-                allowOutsideClick: true
-            });
+                confirmButtonText: 'Continuar'
+            })
+            .then((result) => { 
 
-        }
+                var monto = result.value ? result.value : 0;
 
-        }
+                $.ajax({
+                    url: "../classes/Api.php?action=setStatusCaja",
+                    method: "POST",
+                    data: { "data": {"ESTADO": "ABIERTA"} },
+                    dataType: "JSON",
+                    success: function(r) {
 
-    });
+                        $.ajax({
+                            url: "../classes/Api.php?action=depositoCaja",
+                            method: "POST",
+                            data: { "data": {"monto": monto, "motivo": "APERTURA"}, "table": "caja", "key": "ID", "cod": result.value},
+                            dataType: "JSON",
+                            success: function(r) {
+
+                                if(r[0] == "Inserted") {
+
+                                    swal({
+                                        title: 'Aperturar Caja',
+                                        text: 'La caja se ha abierto',
+                                        type: 'success',
+                                        showCancelButton: false,
+                                        confirmButtonText: 'Aceptar',
+                                        allowOutsideClick: true
+                                    });
+
+                                    refreshDetail(form);
+                                    getSaldoCaja();
+
+                                }
+
+                            }
+                            
+                        });
+                                
+                    }
+
+                    });
+
+                    });
+
+                    }
+                    
+                });
+
+            }
+
+    
+    else {
+
+        swal({
+            title: 'Aviso',
+            text: 'La caja ya está abierta',
+            type: 'warning',
+            showCancelButton: false,
+            confirmButtonText: 'Aceptar',
+            allowOutsideClick: true
+        });
+
+    }
 
 }
 
-function cierreCaja() {
+});
+
+}
+
+function cierreCaja(control) {
+
+    var form = $(control).closest(".panel");
 
     $.ajax({
             url: "../classes/Api.php?action=getStatusCaja",
@@ -414,7 +474,7 @@ function cierreCaja() {
                     input: 'text',
                     type: 'info',
                     showCancelButton: true,
-                    confirmButtonText: 'Retirar',
+                    confirmButtonText: 'Corte',
                     cancelButtonText: 'Cancelar',
                     showLoaderOnConfirm: true,
                     allowOutsideClick: true
@@ -423,15 +483,81 @@ function cierreCaja() {
                     if(result.value) {
 
                         $.ajax({
-                            url: "../classes/Api.php?action=setStatusCaja",
-                            method: "POST",
-                            data: { "data": {"ESTADO": "CERRADA", "RETIRO": result.value} },
-                            dataType: "JSON",
-                            success: function(r) {
 
-                                
+                        url: "../classes/Api.php?action=retiroCaja",
+                        method: "POST",
+                        data: { "data": {"monto":result.value, "motivo": "CIERRE"}, "table": "caja", "key": "ID", "cod": result.value},
+                        dataType: "JSON",
+                        success: function(r) {
+
+                            if(r[0] == "Inserted") {
+
+                                $.ajax({
+                                    url: "../classes/Api.php?action=setStatusCaja",
+                                    method: "POST",
+                                    data: { "data": {"ESTADO": "CERRADA", "RETIRO": result.value} },
+                                    dataType: "JSON",
+                                    success: function(r) {
+
+                                        swal({
+                                            title: 'Cierre de Caja',
+                                            text: "Cierre del día realizado con éxito.",
+                                            type: 'success',
+                                            confirmButtonColor: '#3085d6',
+                                            confirmButtonText: 'Aceptar'
+                                        });
+
+                                        refreshDetail(form);
+                                        getSaldoCaja();
+
+                                    }
+                                });
 
                             }
+                            if(r[0] == "Error_monto") {
+
+                            swal({
+                                title: 'Retiro de Caja',
+                                text: "Retiro excede el saldo de la caja o hay un error en la cantdad.",
+                                type: 'error',
+                                confirmButtonColor: '#3085d6',
+                                confirmButtonText: 'Aceptar'
+                            });
+
+                            refreshDetail(form);
+                            getSaldoCaja();
+
+                            }
+                            if(r[0] == "CAJA_CERRADA") {
+
+                                swal({
+                                title: 'Caja Cerrada',
+                                text: "No se pudo realizar el retiro, la caja esta cerrada.",
+                                type: 'error',
+                                confirmButtonColor: '#3085d6',
+                                confirmButtonText: 'Aceptar'
+                                });
+
+                                refreshDetail(form);
+                                getSaldoCaja();
+
+                            }
+
+                        },
+                        error: function(r) {
+
+                        swal({
+                        title: 'Error!',
+                        text: "No se pudo realizar el retiro, intente de nuevo.",
+                        type: 'error',
+                        confirmButtonColor: '#3085d6',
+                        confirmButtonText: 'Aceptar'
+                        });
+
+
+                        }
+
+
                         });
 
                     }

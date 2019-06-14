@@ -1379,6 +1379,23 @@ public function hacerDevolucion($table, $data, $data_detalle) {
 
         }
 
+        else if($type == "deposito") {
+
+            $motivo = $param["motivo"];
+  
+            $monto = $param["monto"];
+  
+            date_default_timezone_set('America/Guatemala');
+  
+            $date = date("Ymd");
+
+
+            $query = Controller::$connection->query("INSERT INTO caja (fecha, retiro, saldo, motivo) VALUES ($date, $monto, $saldo + $monto, '$motivo')");
+
+            echo json_encode(["Inserted"]);
+  
+          }
+
 
         if($query) {
 
@@ -1512,6 +1529,16 @@ public function hacerDevolucion($table, $data, $data_detalle) {
         $param["fecha"] = "curdate()";
 
         $this->actualizarCaja($data, $param, "retiro");
+
+    }
+
+    public function depositoCaja($data) {
+
+        header('Content-Type: application/json');
+
+        $param["fecha"] = "curdate()";
+
+        $this->actualizarCaja($data, $param, "deposito");
 
     }
 
@@ -1874,6 +1901,11 @@ if(isset($_POST["data"]) && isset($_GET["action"])) {
                 case 'retiroCaja':
 
                     $request->retiroCaja($data);
+
+                break;
+                case 'depositoCaja':
+
+                    $request->depositoCaja($data);
 
                 break;
                 case 'getChartData':
