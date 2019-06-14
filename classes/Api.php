@@ -6,12 +6,6 @@ include("Controller.class.php");
 include("Security.class.php");
 include("permissions.inc");
 
-/**
- * Created by PhpStorm.
- * User: RSpro
- * Date: 24/05/16
- * Time: 14:13
- */
 
 class Api extends Controller  {
 
@@ -31,7 +25,6 @@ class Api extends Controller  {
         echo json_encode($data);
 
     }
-
 
     // Obtiene un registro especifico de una tabla
     public function oneRegistry($table, $key, $cod) {
@@ -1299,8 +1292,6 @@ public function hacerDevolucion($table, $data, $data_detalle) {
         }
         else if($operacion == "egreso") {
 
-            
-          
             $queryCaja = Controller::$connection->query("SELECT SALDO FROM CAJA ORDER BY ID DESC LIMIT 1");
             $total_saldo_caja = $queryCaja->fetch();
           
@@ -1309,18 +1300,32 @@ public function hacerDevolucion($table, $data, $data_detalle) {
             return true;
 
         }
- 
 
     }
+
 
     // Actualiza Saldo de la Caja
     public function actualizarCaja($param, $data, $type) {
 
-
         header('Content-Type: application/json');
 
-        $query = Controller::$connection->query("SELECT * FROM caja ORDER BY id DESC LIMIT 1");
+        $cajaAsk = Controller::$connection->query("SELECT * FROM caja_estado WHERE ID = 1");
 
+        if($cajaAsk) {
+
+            $dataCajaAsk = $cajaAsk->fetch(PDO::FETCH_ASSOC);
+   
+            if($dataCajaAsk["ESTADO"] == "CERRADA") {
+
+                echo json_encode(["CAJA_CERRADA"]);
+
+                return false;
+
+            }
+
+        }
+
+        $query = Controller::$connection->query("SELECT * FROM caja ORDER BY id DESC LIMIT 1");
 
         $dataCaja = $query->fetchAll(PDO::FETCH_ASSOC);
    
@@ -1336,7 +1341,6 @@ public function hacerDevolucion($table, $data, $data_detalle) {
 
                 $motivo = $data["motivo"];
             }
-
 
         if($type == "ingreso") {
 
@@ -1376,14 +1380,11 @@ public function hacerDevolucion($table, $data, $data_detalle) {
         }
 
 
-
         if($query) {
 
             $data = $query->fetchAll(PDO::FETCH_ASSOC);
 
         }
-
-
 
     }
 
@@ -1422,7 +1423,6 @@ public function hacerDevolucion($table, $data, $data_detalle) {
 
             echo json_encode("OK");
 
-
         }
 
         if(isset($_POST['id'])) {
@@ -1452,9 +1452,9 @@ public function hacerDevolucion($table, $data, $data_detalle) {
     public function cargaGas($table, $data) {
 
 
-            $values = Controller::values($data);
+        $values = Controller::values($data);
 
-            $query = Controller::$connection->query("INSERT INTO $table $values");
+        $query = Controller::$connection->query("INSERT INTO $table $values");
 
 
         header('Content-Type: application/json');
@@ -1522,9 +1522,9 @@ public function hacerDevolucion($table, $data, $data_detalle) {
         header('Content-Type: application/json');
         
         
-        $data =  Controller::$connection->query($data);
+        $data = Controller::$connection->query($data);
 
-        $data =  $data->fetchAll(PDO::FETCH_NUM);
+        $data = $data->fetchAll(PDO::FETCH_NUM);
 
         $i = 0;
 
@@ -1540,10 +1540,8 @@ public function hacerDevolucion($table, $data, $data_detalle) {
             
             case "compra":
 
-
                 $query = Controller::$connection->query("SELECT * FROM producto WHERE idproducto = $id_producto");
             
-
                 if($query) {
 
                     // Datos Producto
@@ -1560,7 +1558,6 @@ public function hacerDevolucion($table, $data, $data_detalle) {
                     $existencia = $existencia + $cantidad;
 
                     $query = Controller::$connection->query("INSERT INTO inventario (idproducto, fecha, ingreso, tipoMovimiento, existencia) VALUES('$id_producto', '$fecha', $cantidad, 'Compra', $existencia)");
-
 
        
                     return true;
@@ -1636,17 +1633,65 @@ public function hacerDevolucion($table, $data, $data_detalle) {
         
     }
 
-}
+    // Set Estado Caja
+    public function setEstadoCaja($params) {
 
+        $estado = $params["ESTADO"];
+
+        header('Content-Type: application/json');
+
+        $query = Controller::$connection->query("UPDATE caja_estado SET ESTADO = '$estado' WHERE ID = 1");
+           
+        if($query) {
+
+            echo json_encode("OK");
+
+        }
+        
+    }
+
+    // get Estado Caja
+    public function getEstadoCaja() {
+
+        header('Content-Type: application/json');
+
+        $query = Controller::$connection->query("SELECT * FROM caja_estado WHERE ID = 1");
+           
+        if($query) {
+
+            $data = $query->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode($data);
+
+        }
+
+    }
+
+    // get Saldo Caja
+    public function getSaldoCaja() {
+
+        header('Content-Type: application/json');
+
+        $queryCaja = Controller::$connection->query("SELECT * FROM CAJA ORDER BY ID DESC LIMIT 1");
+      
+        if($queryCaja) {
+
+            $total_saldo_caja = $queryCaja->fetch(PDO::FETCH_ASSOC);
+            echo json_encode($total_saldo_caja);
+
+        }
+
+    }
+
+}
 
 
 if(isset($_POST["data"]) && isset($_GET["action"])) {
 
-
        
         $data = $_POST["data"];
 
-        if(isset( $_POST["table"])) {
+        if(isset($_POST["table"])) {
 
             $table = $_POST["table"];
 
@@ -1861,6 +1906,22 @@ if(isset($_POST["data"]) && isset($_GET["action"])) {
                     $request->hacerDeposito($table, $data);
 
                 break;
+                case 'getStatusCaja':
+
+                    $request->getEstadoCaja();
+
+                break;
+                case 'setStatusCaja':
+
+                    $request->setEstadoCaja($data);
+
+                break;
+                case 'getSaldoCaja':
+
+                    $request->getSaldoCaja();
+
+                break;
+                
 
         }
 

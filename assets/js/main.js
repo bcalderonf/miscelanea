@@ -1824,13 +1824,11 @@ function refreshDetailDevolucion(control) {
 
             if (r) {
 
-
                 $(control).closest(".panel").find('.detail_table_'+table).DataTable().clear().draw();
 
                 $(control).closest(".panel").find('.detail_table_'+table).DataTable().rows.add(r).draw();
 
                 adjustHeaders();
-
 
             }
 

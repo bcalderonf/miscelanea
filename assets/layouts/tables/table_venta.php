@@ -172,7 +172,7 @@ try {
                               if($(form).find("#"+key).data("select2")) {
 
                                   $(form).find("#"+key).select2("trigger", "select", {
-                                      data: { id: value }
+                                      data: { id: value ? value : "nothing" }
                                   });
 
                               }
@@ -235,7 +235,7 @@ try {
                               if($(form).find("#"+key).data("select2")) {
 
                                   $(form).find("#"+key).select2("trigger", "select", {
-                                      data: { id: value }
+                                      data: { id: value ? value : "nothing" }
                                   });
 
                               }
@@ -1171,18 +1171,15 @@ try {
 
                         $(form).find("#" + key).val(value);
 
-
                         if ($(form).find("#" + key).data("select2")) {
 
                             $(form).find("#" + key).select2("trigger", "select", {
                                 data: {
-                                    id: value
+                                    id: value ? value : "nothing"
                                 }
                             });
 
                         }
-
-
 
                     });
 
@@ -1190,7 +1187,6 @@ try {
                     if (r[1]) {
 
                         $(".detalle_venta_table").DataTable().clear().draw();
-
 
                         $(".detalle_venta_table").DataTable().rows.add(r[1]).draw();
 

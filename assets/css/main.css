@@ -157,6 +157,13 @@ a {
 
 }
 
+.saldoValue {
+
+  font-size: 24px;
+  font-weight: bold;
+
+}
+
 .checkbox {
   padding-left: 20px; }
   .checkbox label {

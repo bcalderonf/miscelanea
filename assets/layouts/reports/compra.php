@@ -28,8 +28,11 @@ if($queryCompra) {
 
     $dataCompra = $queryCompra->fetchAll(PDO::FETCH_ASSOC);
 
-}else {
+}
+else {
+
     die("No hay datos.");
+
 }
 
 

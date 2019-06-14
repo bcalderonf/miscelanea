@@ -17,17 +17,13 @@ try {
         $fields = $fields->fetchAll(PDO::FETCH_NUM);
     }
 
-
-
 }
-
 
 catch(mysqli_sql_exception $e) {
 
     echo $e->getMessage();
 
 }
-
 
 
 try {
@@ -218,13 +214,26 @@ catch(mysqli_sql_exception $e) {
                         Retiro <span class="glyphicon glyphicon-usd" aria-hidden="true"></span>
                     </button>
 
+                    <button id="cierre" type="button" class="cierre btn btn-danger btn-md" onclick="cierreCaja(this)">
+                        Cierre <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
+                    </button>
+
+                    <button id="aperturar" type="button" class="aperturar btn btn-primary btn-md" onclick="aperturarCaja(this)">
+                        Aperturar <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
+                    </button>
+
+                    <br>
+                    <br>
+
+                    <div class="well">
+
+                         <div class="saldoValue"><span id="saldoActualCaja">---,---.--</span></div>
+                        
+                    </div>
+
                 </div>
 
-
-
-
         </div>
-
 
     </div>
 
@@ -247,8 +256,6 @@ catch(mysqli_sql_exception $e) {
                     </div>
 
 
-
-
                 </div>
 
 
@@ -267,16 +274,12 @@ catch(mysqli_sql_exception $e) {
                 <thead>
                 <tr>
 
-
-
-                        <th>ID</th>
-                        <th>FECHA</th>
-                        <th>INGRESO</th>
-                        <th>EGRESO</th>
-                        <th>SALDO</th>
-                        <th>MOTIVO</th>
-
-
+                    <th>ID</th>
+                    <th>FECHA</th>
+                    <th>INGRESO</th>
+                    <th>EGRESO</th>
+                    <th>SALDO</th>
+                    <th>MOTIVO</th>
 
                 </tr>
                 </thead>
@@ -320,6 +323,140 @@ catch(mysqli_sql_exception $e) {
 </div>
 
 <script type="text/javascript">
+
+function getSaldoCaja() {
+
+    var formatter = new Intl.NumberFormat('es-GT', {
+        style: 'currency',
+        currency: 'GTQ',
+    });
+
+    
+
+    $.ajax({
+        url: "../classes/Api.php?action=getSaldoCaja",
+        method: "POST",
+        data: { "data": {"ESTADO": "COMPROBAR"} },
+        dataType: "JSON",
+        success: function(r) {
+
+            $("#saldoActualCaja").html(formatter.format(r.saldo));
+
+        }
+    });
+
+}
+
+
+setInterval(() => {
+
+    getSaldoCaja();
+
+}, 2000);
+
+
+function aperturarCaja() {
+
+    $.ajax({
+        url: "../classes/Api.php?action=getStatusCaja",
+        method: "POST",
+        data: { "data": {"ESTADO": "EVALUAR"} },
+        dataType: "JSON",
+        success: function(r) {
+
+        if(r[0].ESTADO == "CERRADA") {
+
+            $.ajax({
+                url: "../classes/Api.php?action=setStatusCaja",
+                method: "POST",
+                data: { "data": {"ESTADO": "ABIERTA"} },
+                dataType: "JSON",
+                success: function(r) {
+
+                    
+
+                }
+            });
+
+        }
+        else {
+
+            swal({
+                title: 'Aviso',
+                text: 'La caja ya está abierta',
+                type: 'warning',
+                showCancelButton: false,
+                confirmButtonText: 'Aceptar',
+                allowOutsideClick: true
+            });
+
+        }
+
+        }
+
+    });
+
+}
+
+function cierreCaja() {
+
+    $.ajax({
+            url: "../classes/Api.php?action=getStatusCaja",
+            method: "POST",
+            data: { "data": {"ESTADO": "EVALUAR"} },
+            dataType: "JSON",
+            success: function(r) {
+
+            if(r[0].ESTADO == "ABIERTA") {
+
+                swal({
+                    title: '¿Cúanto es el monto a <br>retirar de Caja?',
+                    input: 'text',
+                    type: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Retirar',
+                    cancelButtonText: 'Cancelar',
+                    showLoaderOnConfirm: true,
+                    allowOutsideClick: true
+                }).then((result) => {
+
+                    if(result.value) {
+
+                        $.ajax({
+                            url: "../classes/Api.php?action=setStatusCaja",
+                            method: "POST",
+                            data: { "data": {"ESTADO": "CERRADA", "RETIRO": result.value} },
+                            dataType: "JSON",
+                            success: function(r) {
+
+                                
+
+                            }
+                        });
+
+                    }
+
+                });
+
+            }
+            else {
+
+                swal({
+                    title: 'Aviso',
+                    text: 'La caja ya está cerrada',
+                    type: 'warning',
+                    showCancelButton: false,
+                    confirmButtonText: 'Aceptar',
+                    allowOutsideClick: true
+                });
+
+            }
+        }
+    
+    });
+
+}
+
 
 function retirarCaja(control) {
 
@@ -373,6 +510,7 @@ function retirarCaja(control) {
                 });
 
                 refreshDetail(form);
+                getSaldoCaja();
 
 
               }
@@ -387,9 +525,23 @@ function retirarCaja(control) {
                 });
 
                 refreshDetail(form);
+                getSaldoCaja();
 
               }
+                if(r[0] == "CAJA_CERRADA") {
 
+                    swal({
+                    title: 'Caja Cerrada',
+                    text: "No se pudo realizar el retiro, la caja esta cerrada.",
+                    type: 'error',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'Aceptar'
+                    });
+
+                    refreshDetail(form);
+                    getSaldoCaja();
+
+                }
 
           },
         error: function(r) {
@@ -410,7 +562,6 @@ function retirarCaja(control) {
 
         }
         else {
-
 
 
 
